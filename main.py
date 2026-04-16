@@ -12,11 +12,11 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timezone
+from functools import partial
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import JSONResponse
 
 from diff import diff_portfolios
 from downloader import download_latest
@@ -32,22 +32,20 @@ store = PortfolioStore()
 scheduler = AsyncIOScheduler(timezone="Asia/Taipei")
 
 
+async def _run_download() -> dict:
+    """Run the blocking download_latest in a thread pool so the event loop stays free."""
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, partial(download_latest, store=store))
+
+
 async def scheduled_download():
     logger.info("Scheduled download triggered")
-
-    # 獲取目前的 Event Loop
-    loop = asyncio.get_running_loop()
-
-    # None 代表使用預設的 ThreadPoolExecutor
-    # 這樣會另開 Thread 執行，不會卡住 FastAPI 的主迴圈
-    result = await loop.run_in_executor(None, download_latest, store)
-
+    result = await _run_download()
     logger.info(f"Download result: {result}")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Run once at startup too
     scheduler.add_job(
         scheduled_download,
         CronTrigger(hour=17, minute=0, timezone="Asia/Taipei"),
@@ -135,7 +133,7 @@ def get_diff(
 @app.post("/download", summary="Manually trigger a download")
 async def trigger_download():
     """Immediately downloads the latest xlsx and registers it if new."""
-    result = download_latest(store=store)
+    result = await _run_download()
     if not result["success"]:
         raise HTTPException(status_code=502, detail=result.get("error", "Download failed"))
     return result
