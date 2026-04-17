@@ -696,9 +696,9 @@
         <div class="metric-sub">NTD</div>
       </div>
       <div class="metric">
-        <div class="metric-label">流通在外單位數</div>
-        <div class="metric-value">${fmtNTD(fa.units_outstanding)}</div>
-        <div class="metric-sub">單位</div>
+        <div class="metric-label">流通張數</div>
+        <div class="metric-value">${fmtNTD(fa.units_outstanding/1000)}</div>
+        <div class="metric-sub">張</div>
       </div>
       <div class="metric">
         <div class="metric-label">成分股數</div>
@@ -830,8 +830,8 @@
       </div>
       <div class="metric">
         <div class="metric-label">流通單位數</div>
-        <div class="metric-value">${fmtNTD(fa.units_outstanding.end)}</div>
-        <div class="metric-sub">${fmtNTD(fa.units_outstanding.change)} 變化</div>
+        <div class="metric-value">${fmtLots(fa.units_outstanding.end)}</div>
+        <div class="metric-sub">${fmtLots(fa.units_outstanding.change)} 變化</div>
       </div>
     </div>
 
@@ -884,8 +884,8 @@
     // ── Init ──
     loadDates();
     const today = new Date().toISOString().slice(0, 10);
-    const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
-    document.getElementById('diff-start').value = monthAgo;
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    document.getElementById('diff-start').value = yesterday;
     document.getElementById('diff-end').value = today;
 </script>
 </body>
