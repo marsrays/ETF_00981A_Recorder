@@ -1,455 +1,689 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>00981A ETF 投資組合追蹤</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>00981A ETF 投資組合追蹤</title>
+    <link rel="icon" type="image/svg+xml"
+          href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23185fa5'/><polyline points='4,22 10,14 16,18 22,8 28,12' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #f8f7f4;
+            --surface: #ffffff;
+            --surface-2: #f1efe8;
+            --border: rgba(0, 0, 0, 0.12);
+            --border-md: rgba(0, 0, 0, 0.22);
+            --text: #1a1a18;
+            --text-2: #5f5e5a;
+            --text-3: #888780;
+            --accent: #185fa5;
+            --accent-bg: #e6f1fb;
+            --accent-text: #0c447c;
+            --success-bg: #eaf3de;
+            --success-text: #3b6d11;
+            --danger-bg: #fcebeb;
+            --danger-text: #a32d2d;
+            --warn-bg: #faeeda;
+            --warn-text: #854f0b;
+            --radius: 8px;
+            --radius-lg: 12px;
+        }
 
-  :root {
-    --bg: #f8f7f4;
-    --surface: #ffffff;
-    --surface-2: #f1efe8;
-    --border: rgba(0,0,0,0.12);
-    --border-md: rgba(0,0,0,0.22);
-    --text: #1a1a18;
-    --text-2: #5f5e5a;
-    --text-3: #888780;
-    --accent: #185fa5;
-    --accent-bg: #e6f1fb;
-    --accent-text: #0c447c;
-    --success-bg: #eaf3de;
-    --success-text: #3b6d11;
-    --danger-bg: #fcebeb;
-    --danger-text: #a32d2d;
-    --warn-bg: #faeeda;
-    --warn-text: #854f0b;
-    --radius: 8px;
-    --radius-lg: 12px;
-  }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #1c1c1a;
+                --surface: #252523;
+                --surface-2: #2c2c2a;
+                --border: rgba(255, 255, 255, 0.1);
+                --border-md: rgba(255, 255, 255, 0.2);
+                --text: #f1efe8;
+                --text-2: #b4b2a9;
+                --text-3: #888780;
+                --accent: #378add;
+                --accent-bg: #042c53;
+                --accent-text: #b5d4f4;
+                --success-bg: #173404;
+                --success-text: #c0dd97;
+                --danger-bg: #501313;
+                --danger-text: #f7c1c1;
+                --warn-bg: #412402;
+                --warn-text: #fac775;
+            }
+        }
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #1c1c1a;
-      --surface: #252523;
-      --surface-2: #2c2c2a;
-      --border: rgba(255,255,255,0.1);
-      --border-md: rgba(255,255,255,0.2);
-      --text: #f1efe8;
-      --text-2: #b4b2a9;
-      --text-3: #888780;
-      --accent: #378add;
-      --accent-bg: #042c53;
-      --accent-text: #b5d4f4;
-      --success-bg: #173404;
-      --success-text: #c0dd97;
-      --danger-bg: #501313;
-      --danger-text: #f7c1c1;
-      --warn-bg: #412402;
-      --warn-text: #fac775;
-    }
-  }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 15px;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
 
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    font-size: 15px;
-    line-height: 1.6;
-    min-height: 100vh;
-  }
+        header {
+            background: var(--surface);
+            border-bottom: 0.5px solid var(--border);
+            padding: 0 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 56px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
 
-  header {
-    background: var(--surface);
-    border-bottom: 0.5px solid var(--border);
-    padding: 0 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 56px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
+        .logo {
+            font-size: 15px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-  .logo { font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
-  .logo-badge {
-    background: var(--accent-bg);
-    color: var(--accent-text);
-    font-size: 11px;
-    font-weight: 500;
-    padding: 2px 8px;
-    border-radius: 999px;
-  }
+        .logo-badge {
+            background: var(--accent-bg);
+            color: var(--accent-text);
+            font-size: 11px;
+            font-weight: 500;
+            padding: 2px 8px;
+            border-radius: 999px;
+        }
 
-  .header-actions { display: flex; align-items: center; gap: 10px; }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-  a.ext-link {
-    font-size: 13px;
-    color: var(--accent);
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 6px 10px;
-    border-radius: var(--radius);
-    border: 0.5px solid var(--border);
-    transition: background 0.15s;
-  }
-  a.ext-link:hover { background: var(--surface-2); }
-  a.ext-link svg { width: 12px; height: 12px; }
+        a.ext-link {
+            font-size: 13px;
+            color: var(--accent);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 10px;
+            border-radius: var(--radius);
+            border: 0.5px solid var(--border);
+            transition: background 0.15s;
+        }
 
-  button {
-    font-size: 13px;
-    font-family: inherit;
-    cursor: pointer;
-    border-radius: var(--radius);
-    border: 0.5px solid var(--border-md);
-    background: transparent;
-    color: var(--text);
-    padding: 6px 14px;
-    transition: background 0.15s, transform 0.1s;
-  }
-  button:hover { background: var(--surface-2); }
-  button:active { transform: scale(0.98); }
-  button.primary {
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
-  }
-  button.primary:hover { opacity: 0.88; }
-  button:disabled { opacity: 0.45; cursor: not-allowed; }
+        a.ext-link:hover {
+            background: var(--surface-2);
+        }
 
-  .main { max-width: 900px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+        a.ext-link svg {
+            width: 12px;
+            height: 12px;
+        }
 
-  .tabs { display: flex; gap: 0; border-bottom: 0.5px solid var(--border); margin-bottom: 1.5rem; }
-  .tab {
-    padding: 10px 18px;
-    font-size: 14px;
-    cursor: pointer;
-    border: none;
-    background: transparent;
-    color: var(--text-2);
-    border-bottom: 2px solid transparent;
-    border-radius: 0;
-    transform: none;
-  }
-  .tab:hover { color: var(--text); background: transparent; }
-  .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
+        button {
+            font-size: 13px;
+            font-family: inherit;
+            cursor: pointer;
+            border-radius: var(--radius);
+            border: 0.5px solid var(--border-md);
+            background: transparent;
+            color: var(--text);
+            padding: 6px 14px;
+            transition: background 0.15s, transform 0.1s;
+        }
 
-  .panel { display: none; }
-  .panel.active { display: block; }
+        button:hover {
+            background: var(--surface-2);
+        }
 
-  .card {
-    background: var(--surface);
-    border: 0.5px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 1rem 1.25rem;
-    margin-bottom: 1rem;
-  }
+        button:active {
+            transform: scale(0.98);
+        }
 
-  .section-title {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-3);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-bottom: 0.75rem;
-  }
+        button.primary {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
 
-  .date-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
+        button.primary:hover {
+            opacity: 0.88;
+        }
 
-  .date-chip {
-    padding: 5px 12px;
-    border-radius: 999px;
-    border: 0.5px solid var(--border-md);
-    font-size: 13px;
-    cursor: pointer;
-    background: transparent;
-    color: var(--text);
-    font-family: inherit;
-    transition: background 0.12s, color 0.12s, border-color 0.12s;
-    transform: none;
-  }
-  .date-chip:hover { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
-  .date-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 500; }
+        button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
 
-  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 1rem; }
-  .metric {
-    background: var(--surface-2);
-    border-radius: var(--radius);
-    padding: 0.875rem 1rem;
-  }
-  .metric-label { font-size: 12px; color: var(--text-2); margin-bottom: 4px; }
-  .metric-value { font-size: 20px; font-weight: 500; color: var(--text); }
-  .metric-sub { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+        .main {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 1.5rem 1rem 3rem;
+        }
 
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { text-align: left; padding: 6px 8px; font-weight: 500; color: var(--text-2); font-size: 12px; border-bottom: 0.5px solid var(--border); }
-  td { padding: 7px 8px; border-bottom: 0.5px solid var(--border); color: var(--text); }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: var(--surface-2); }
+        .tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 0.5px solid var(--border);
+            margin-bottom: 1.5rem;
+        }
 
-  .badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 999px;
-    font-size: 11px;
-    font-weight: 500;
-  }
-  .badge-up { background: var(--success-bg); color: var(--success-text); }
-  .badge-down { background: var(--danger-bg); color: var(--danger-text); }
-  .badge-new { background: var(--accent-bg); color: var(--accent-text); }
-  .badge-removed { background: var(--warn-bg); color: var(--warn-text); }
-  .badge-same { background: var(--surface-2); color: var(--text-3); }
+        .tab {
+            padding: 10px 18px;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            color: var(--text-2);
+            border-bottom: 2px solid transparent;
+            border-radius: 0;
+            transform: none;
+        }
 
-  .diff-section { margin-bottom: 1.25rem; }
-  .diff-section-title {
-    font-size: 13px; font-weight: 500; color: var(--text-2);
-    margin-bottom: 8px;
-    display: flex; align-items: center; gap: 6px;
-  }
-  .count-bubble {
-    background: var(--surface-2);
-    border-radius: 999px;
-    padding: 1px 7px;
-    font-size: 11px;
-    color: var(--text-3);
-  }
+        .tab:hover {
+            color: var(--text);
+            background: transparent;
+        }
 
-  .date-range-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 1rem; }
-  .field { display: flex; flex-direction: column; gap: 4px; }
-  .field label { font-size: 12px; color: var(--text-2); }
-  .field input {
-    font-size: 14px;
-    font-family: inherit;
-    padding: 7px 10px;
-    border: 0.5px solid var(--border-md);
-    border-radius: var(--radius);
-    background: var(--surface);
-    color: var(--text);
-    outline: none;
-  }
-  .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-bg); }
+        .tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+            font-weight: 500;
+        }
 
-  .toast {
-    position: fixed;
-    bottom: 1.5rem; right: 1.5rem;
-    background: var(--surface);
-    border: 0.5px solid var(--border-md);
-    border-radius: var(--radius-lg);
-    padding: 12px 18px;
-    font-size: 13px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
-    opacity: 0;
-    transform: translateY(8px);
-    transition: opacity 0.2s, transform 0.2s;
-    pointer-events: none;
-    z-index: 200;
-    max-width: 300px;
-  }
-  .toast.show { opacity: 1; transform: translateY(0); }
-  .toast.success { border-left: 3px solid #639922; }
-  .toast.error { border-left: 3px solid #e24b4a; }
-  .toast.info { border-left: 3px solid var(--accent); }
+        .panel {
+            display: none;
+        }
 
-  .empty { color: var(--text-3); font-size: 14px; text-align: center; padding: 2rem 0; }
-  .loading { color: var(--text-3); font-size: 13px; }
+        .panel.active {
+            display: block;
+        }
 
-  .pct { font-size: 12px; }
-  .pct.up { color: var(--success-text); }
-  .pct.down { color: var(--danger-text); }
-  .pct.flat { color: var(--text-3); }
+        .card {
+            background: var(--surface);
+            border: 0.5px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1rem 1.25rem;
+            margin-bottom: 1rem;
+        }
 
-  .alloc-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 0.5px solid var(--border); font-size: 13px; }
-  .alloc-row:last-child { border-bottom: none; }
-  .alloc-label { color: var(--text-2); }
+        .section-title {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 0.75rem;
+        }
 
-  .resolved-note {
-    font-size: 12px; color: var(--text-3);
-    margin-bottom: 1rem;
-    padding: 8px 12px;
-    background: var(--surface-2);
-    border-radius: var(--radius);
-  }
+        .date-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
 
-  .spinner {
-    display: inline-block;
-    width: 14px; height: 14px;
-    border: 2px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-    vertical-align: middle;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-</style>
+        .date-chip {
+            padding: 5px 12px;
+            border-radius: 999px;
+            border: 0.5px solid var(--border-md);
+            font-size: 13px;
+            cursor: pointer;
+            background: transparent;
+            color: var(--text);
+            font-family: inherit;
+            transition: background 0.12s, color 0.12s, border-color 0.12s;
+            transform: none;
+        }
+
+        .date-chip:hover {
+            background: var(--accent-bg);
+            border-color: var(--accent);
+            color: var(--accent-text);
+        }
+
+        .date-chip.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .metric {
+            background: var(--surface-2);
+            border-radius: var(--radius);
+            padding: 0.875rem 1rem;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: var(--text-2);
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            font-size: 20px;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .metric-sub {
+            font-size: 11px;
+            color: var(--text-3);
+            margin-top: 2px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th {
+            text-align: left;
+            padding: 6px 8px;
+            font-weight: 500;
+            color: var(--text-2);
+            font-size: 12px;
+            border-bottom: 0.5px solid var(--border);
+        }
+
+        td {
+            padding: 7px 8px;
+            border-bottom: 0.5px solid var(--border);
+            color: var(--text);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: var(--surface-2);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .badge-up {
+            background: var(--success-bg);
+            color: var(--success-text);
+        }
+
+        .badge-down {
+            background: var(--danger-bg);
+            color: var(--danger-text);
+        }
+
+        .badge-new {
+            background: var(--accent-bg);
+            color: var(--accent-text);
+        }
+
+        .badge-removed {
+            background: var(--warn-bg);
+            color: var(--warn-text);
+        }
+
+        .badge-same {
+            background: var(--surface-2);
+            color: var(--text-3);
+        }
+
+        .diff-section {
+            margin-bottom: 1.25rem;
+        }
+
+        .diff-section-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-2);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .count-bubble {
+            background: var(--surface-2);
+            border-radius: 999px;
+            padding: 1px 7px;
+            font-size: 11px;
+            color: var(--text-3);
+        }
+
+        .date-range-row {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .field label {
+            font-size: 12px;
+            color: var(--text-2);
+        }
+
+        .field input {
+            font-size: 14px;
+            font-family: inherit;
+            padding: 7px 10px;
+            border: 0.5px solid var(--border-md);
+            border-radius: var(--radius);
+            background: var(--surface);
+            color: var(--text);
+            outline: none;
+        }
+
+        .field input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-bg);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            background: var(--surface);
+            border: 0.5px solid var(--border-md);
+            border-radius: var(--radius-lg);
+            padding: 12px 18px;
+            font-size: 13px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 0.2s, transform 0.2s;
+            pointer-events: none;
+            z-index: 200;
+            max-width: 300px;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .toast.success {
+            border-left: 3px solid #639922;
+        }
+
+        .toast.error {
+            border-left: 3px solid #e24b4a;
+        }
+
+        .toast.info {
+            border-left: 3px solid var(--accent);
+        }
+
+        .empty {
+            color: var(--text-3);
+            font-size: 14px;
+            text-align: center;
+            padding: 2rem 0;
+        }
+
+        .loading {
+            color: var(--text-3);
+            font-size: 13px;
+        }
+
+        .pct {
+            font-size: 12px;
+        }
+
+        .pct.up {
+            color: var(--success-text);
+        }
+
+        .pct.down {
+            color: var(--danger-text);
+        }
+
+        .pct.flat {
+            color: var(--text-3);
+        }
+
+        .alloc-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 0.5px solid var(--border);
+            font-size: 13px;
+        }
+
+        .alloc-row:last-child {
+            border-bottom: none;
+        }
+
+        .alloc-label {
+            color: var(--text-2);
+        }
+
+        .resolved-note {
+            font-size: 12px;
+            color: var(--text-3);
+            margin-bottom: 1rem;
+            padding: 8px 12px;
+            background: var(--surface-2);
+            border-radius: var(--radius);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">
-    <span>00981A ETF 追蹤</span>
-    <span class="logo-badge">投資組合</span>
-  </div>
-  <div class="header-actions">
-    <a class="ext-link" href="https://www.ezmoney.com.tw/ETF/Fund/Info?fundCode=49YTW" target="_blank" rel="noopener">
-      ETF 官網
-      <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
-        <path d="M2 10L10 2M5 2h5v5"/>
-      </svg>
-    </a>
-    <button id="btn-refresh" onclick="triggerDownload()">立即更新</button>
-  </div>
+    <div class="logo">
+        <span>00981A ETF 追蹤</span>
+        <span class="logo-badge">投資組合</span>
+    </div>
+    <div class="header-actions">
+        <a class="ext-link" href="https://www.ezmoney.com.tw/ETF/Fund/Info?fundCode=49YTW" target="_blank"
+           rel="noopener">
+            ETF 官網
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M2 10L10 2M5 2h5v5"/>
+            </svg>
+        </a>
+        <button id="btn-refresh" onclick="triggerDownload()">立即更新</button>
+    </div>
 </header>
 
 <div class="main">
-  <div class="tabs">
-    <button class="tab active" onclick="switchTab('snapshot', this)">快照瀏覽</button>
-    <button class="tab" onclick="switchTab('diff', this)">區間比較</button>
-  </div>
-
-  <!-- ── Snapshot panel ── -->
-  <div id="panel-snapshot" class="panel active">
-
-    <div class="card">
-      <div class="section-title">已有資料日期</div>
-      <div id="date-grid" class="date-grid">
-        <span class="loading"><span class="spinner"></span> 載入中…</span>
-      </div>
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('snapshot', this)">快照瀏覽</button>
+        <button class="tab" onclick="switchTab('diff', this)">區間比較</button>
     </div>
 
-    <div id="snapshot-content"></div>
-  </div>
+    <!-- ── Snapshot panel ── -->
+    <div id="panel-snapshot" class="panel active">
 
-  <!-- ── Diff panel ── -->
-  <div id="panel-diff" class="panel">
-    <div class="card">
-      <div class="date-range-row">
-        <div class="field">
-          <label>起始日期</label>
-          <input type="date" id="diff-start" />
+        <div class="card">
+            <div class="section-title">已有資料日期</div>
+            <div id="date-grid" class="date-grid">
+                <span class="loading"><span class="spinner"></span> 載入中…</span>
+            </div>
         </div>
-        <div class="field">
-          <label>結束日期</label>
-          <input type="date" id="diff-end" />
-        </div>
-        <button class="primary" onclick="queryDiff()">查詢差異</button>
-      </div>
+
+        <div id="snapshot-content"></div>
     </div>
-    <div id="diff-content"></div>
-  </div>
+
+    <!-- ── Diff panel ── -->
+    <div id="panel-diff" class="panel">
+        <div class="card">
+            <div class="date-range-row">
+                <div class="field">
+                    <label>起始日期</label>
+                    <input type="date" id="diff-start"/>
+                </div>
+                <div class="field">
+                    <label>結束日期</label>
+                    <input type="date" id="diff-end"/>
+                </div>
+                <button class="primary" onclick="queryDiff()">查詢差異</button>
+            </div>
+        </div>
+        <div id="diff-content"></div>
+    </div>
 </div>
 
 <div id="toast" class="toast"></div>
 
 <script>
-const API = '';
+    const API = '';
 
-function switchTab(name, el) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('panel-' + name).classList.add('active');
-}
-
-function showToast(msg, type = 'info') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast show ' + type;
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => { t.classList.remove('show'); }, 3500);
-}
-
-function fmt(n) {
-  if (n == null) return '—';
-  return Number(n).toLocaleString('zh-TW');
-}
-
-function fmtNTD(n) {
-  if (n == null) return '—';
-  const abs = Math.abs(n);
-  if (abs >= 1e8) return (n < 0 ? '-' : '') + (abs / 1e8).toFixed(2) + ' 億';
-  if (abs >= 1e4) return (n < 0 ? '-' : '') + (abs / 1e4).toFixed(0) + ' 萬';
-  return fmt(n);
-}
-
-function fmtPct(n) {
-  if (n == null) return '—';
-  return (n * 100).toFixed(2) + '%';
-}
-
-function changeBadge(val, isMoney) {
-  if (val == null || val === 0) return '<span class="badge badge-same">不變</span>';
-  const up = val > 0;
-  const label = (up ? '+' : '') + (isMoney ? fmtNTD(val) : val);
-  return `<span class="badge ${up ? 'badge-up' : 'badge-down'}">${label}</span>`;
-}
-
-function pctSpan(pct) {
-  if (pct == null) return '';
-  const cls = pct > 0 ? 'up' : pct < 0 ? 'down' : 'flat';
-  return `<span class="pct ${cls}">${pct > 0 ? '+' : ''}${(pct * 100).toFixed(2)}%</span>`;
-}
-
-// ── Load dates ──
-async function loadDates() {
-  try {
-    const r = await fetch(API + '/dates');
-    const data = await r.json();
-    const grid = document.getElementById('date-grid');
-    if (!data.dates || data.dates.length === 0) {
-      grid.innerHTML = '<span class="empty">尚無資料</span>';
-      return;
+    function switchTab(name, el) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        el.classList.add('active');
+        document.getElementById('panel-' + name).classList.add('active');
     }
-    grid.innerHTML = data.dates.map(d =>
-      `<button class="date-chip" onclick="loadSnapshot('${d}')">${d}</button>`
-    ).join('');
-  } catch(e) {
-    document.getElementById('date-grid').innerHTML = '<span class="empty">無法連線至 API</span>';
-  }
-}
 
-// ── Load snapshot ──
-async function loadSnapshot(dateStr) {
-  document.querySelectorAll('.date-chip').forEach(c => {
-    c.classList.toggle('active', c.textContent === dateStr);
-  });
+    function showToast(msg, type = 'info') {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = 'toast show ' + type;
+        clearTimeout(t._timer);
+        t._timer = setTimeout(() => {
+            t.classList.remove('show');
+        }, 3500);
+    }
 
-  const el = document.getElementById('snapshot-content');
-  el.innerHTML = '<div class="card"><span class="loading"><span class="spinner"></span> 載入中…</span></div>';
+    function fmt(n) {
+        if (n == null) return '—';
+        return Number(n).toLocaleString('zh-TW');
+    }
 
-  try {
-    const r = await fetch(API + '/snapshot/' + dateStr);
-    if (!r.ok) { el.innerHTML = '<div class="card"><span class="empty">找不到資料</span></div>'; return; }
-    const d = await r.json();
-    renderSnapshot(el, d);
-  } catch(e) {
-    el.innerHTML = '<div class="card"><span class="empty">載入失敗</span></div>';
-  }
-}
+    function fmtNTD(n) {
+        if (n == null) return '—';
+        const abs = Math.abs(n);
+        if (abs >= 1e8) return (n < 0 ? '-' : '') + (abs / 1e8).toFixed(2) + ' 億';
+        if (abs >= 1e4) return (n < 0 ? '-' : '') + (abs / 1e4).toFixed(0) + ' 萬';
+        return fmt(n);
+    }
 
-function renderSnapshot(el, d) {
-  const fa = d.fund_assets;
-  const aa = d.asset_allocation;
+    function fmtPct(n) {
+        if (n == null) return '—';
+        return (n * 100).toFixed(2) + '%';
+    }
 
-  const allocRows = [
-    ['股票', aa.equity_total_ntd, aa.equity_weight],
-    ['現金', aa.cash_ntd, null],
-    ['期貨保證金', aa.futures_margin_ntd, null],
-    ['應收付證券款', aa.securities_receivable_ntd, null],
-    ['期貨(名目本金)', aa.futures_nominal_ntd, null],
-    ['申贖應付款', aa.redemption_payable_ntd, null],
-  ];
+    function fmtLots(shares) {
+        if (shares == null) return '—';
+        return Math.round(shares / 1000).toLocaleString('zh-TW') + ' 張';
+    }
 
-  el.innerHTML = `
+    function fmtLotsDiff(shares) {
+        if (shares == null || shares === 0) return '<span class="badge badge-same">不變</span>';
+        const lots = Math.round(shares / 1000);
+        const up = lots > 0;
+        return `<span class="badge ${up ? 'badge-up' : 'badge-down'}">${up ? '+' : ''}${lots.toLocaleString('zh-TW')} 張</span>`;
+    }
+
+    function changeBadge(val, isMoney) {
+        if (val == null || val === 0) return '<span class="badge badge-same">不變</span>';
+        const up = val > 0;
+        const label = (up ? '+' : '') + (isMoney ? fmtNTD(val) : val.toFixed ? val.toFixed(4) : val);
+        return `<span class="badge ${up ? 'badge-up' : 'badge-down'}">${label}</span>`;
+    }
+
+    function pctSpan(pct) {
+        if (pct == null) return '';
+        const cls = pct > 0 ? 'up' : pct < 0 ? 'down' : 'flat';
+        return `<span class="pct ${cls}">${pct > 0 ? '+' : ''}${(pct * 100).toFixed(2)}%</span>`;
+    }
+
+    // ── Load dates ──
+    async function loadDates() {
+        try {
+            const r = await fetch(API + '/dates');
+            const data = await r.json();
+            const grid = document.getElementById('date-grid');
+            if (!data.dates || data.dates.length === 0) {
+                grid.innerHTML = '<span class="empty">尚無資料</span>';
+                return;
+            }
+            grid.innerHTML = data.dates.map(d =>
+                `<button class="date-chip" onclick="loadSnapshot('${d}')">${d}</button>`
+            ).join('');
+        } catch (e) {
+            document.getElementById('date-grid').innerHTML = '<span class="empty">無法連線至 API</span>';
+        }
+    }
+
+    // ── Load snapshot ──
+    async function loadSnapshot(dateStr) {
+        document.querySelectorAll('.date-chip').forEach(c => {
+            c.classList.toggle('active', c.textContent === dateStr);
+        });
+
+        const el = document.getElementById('snapshot-content');
+        el.innerHTML = '<div class="card"><span class="loading"><span class="spinner"></span> 載入中…</span></div>';
+
+        try {
+            const r = await fetch(API + '/snapshot/' + dateStr);
+            if (!r.ok) {
+                el.innerHTML = '<div class="card"><span class="empty">找不到資料</span></div>';
+                return;
+            }
+            const d = await r.json();
+            renderSnapshot(el, d);
+        } catch (e) {
+            el.innerHTML = '<div class="card"><span class="empty">載入失敗</span></div>';
+        }
+    }
+
+    function renderSnapshot(el, d) {
+        const fa = d.fund_assets;
+        const aa = d.asset_allocation;
+
+        const allocRows = [
+            ['股票', aa.equity_total_ntd, aa.equity_weight],
+            ['現金', aa.cash_ntd, null],
+            ['期貨保證金', aa.futures_margin_ntd, null],
+            ['應收付證券款', aa.securities_receivable_ntd, null],
+            ['期貨(名目本金)', aa.futures_nominal_ntd, null],
+            ['申贖應付款', aa.redemption_payable_ntd, null],
+        ];
+
+        el.innerHTML = `
     <div class="metrics">
       <div class="metric">
         <div class="metric-label">淨資產總值</div>
@@ -462,9 +696,9 @@ function renderSnapshot(el, d) {
         <div class="metric-sub">NTD</div>
       </div>
       <div class="metric">
-        <div class="metric-label">流通張數</div>
-        <div class="metric-value">${fmtNTD(fa.units_outstanding/1000)}</div>
-        <div class="metric-sub">張</div>
+        <div class="metric-label">流通在外單位數</div>
+        <div class="metric-value">${fmtNTD(fa.units_outstanding)}</div>
+        <div class="metric-sub">單位</div>
       </div>
       <div class="metric">
         <div class="metric-label">成分股數</div>
@@ -486,98 +720,101 @@ function renderSnapshot(el, d) {
       <div class="section-title">成分股（${d.stocks.length} 檔）</div>
       <table>
         <thead>
-          <tr><th>代號</th><th>名稱</th><th style="text-align:right">股數(張)</th><th style="text-align:right">持股權重</th></tr>
+          <tr><th>代號</th><th>名稱</th><th style="text-align:right">張數</th><th style="text-align:right">持股權重</th></tr>
         </thead>
         <tbody>
           ${d.stocks.map(s => `
             <tr>
               <td style="color:var(--text-3);font-size:12px">${s.code}</td>
               <td>${s.name}</td>
-              <td style="text-align:right">${fmt(s.shares/1000)}</td>
+              <td style="text-align:right">${fmtLots(s.shares)}</td>
               <td style="text-align:right">${fmtPct(s.weight)}</td>
             </tr>`).join('')}
         </tbody>
       </table>
     </div>
   `;
-}
-
-// ── Diff ──
-async function queryDiff() {
-  const start = document.getElementById('diff-start').value;
-  const end = document.getElementById('diff-end').value;
-  if (!start || !end) { showToast('請選擇起始與結束日期', 'error'); return; }
-
-  const el = document.getElementById('diff-content');
-  el.innerHTML = '<div class="card"><span class="loading"><span class="spinner"></span> 查詢中…</span></div>';
-
-  try {
-    const r = await fetch(`${API}/diff?start=${start}&end=${end}`);
-    if (!r.ok) {
-      const err = await r.json();
-      el.innerHTML = `<div class="card"><span class="empty">${err.detail || '查詢失敗'}</span></div>`;
-      return;
     }
-    const d = await r.json();
-    renderDiff(el, d);
-  } catch(e) {
-    el.innerHTML = '<div class="card"><span class="empty">查詢失敗</span></div>';
-  }
-}
 
-function renderDiff(el, d) {
-  const fa = d.fund_assets;
-  const s = d.stocks;
+    // ── Diff ──
+    async function queryDiff() {
+        const start = document.getElementById('diff-start').value;
+        const end = document.getElementById('diff-end').value;
+        if (!start || !end) {
+            showToast('請選擇起始與結束日期', 'error');
+            return;
+        }
 
-  const resolved = (d.start_date !== d.requested_start || d.end_date !== d.requested_end)
-    ? `<div class="resolved-note">實際使用日期：${d.start_date} → ${d.end_date}（依最近有效日期調整）</div>`
-    : '';
+        const el = document.getElementById('diff-content');
+        el.innerHTML = '<div class="card"><span class="loading"><span class="spinner"></span> 查詢中…</span></div>';
 
-  const allStocks = [
-    ...s.added.map(x => ({...x, _type:'added'})),
-    ...s.removed.map(x => ({...x, _type:'removed'})),
-    ...s.changed.map(x => ({...x, _type:'changed'})),
-    ...s.unchanged.map(x => ({...x, _type:'unchanged'})),
-  ];
+        try {
+            const r = await fetch(`${API}/diff?start=${start}&end=${end}`);
+            if (!r.ok) {
+                const err = await r.json();
+                el.innerHTML = `<div class="card"><span class="empty">${err.detail || '查詢失敗'}</span></div>`;
+                return;
+            }
+            const d = await r.json();
+            renderDiff(el, d);
+        } catch (e) {
+            el.innerHTML = '<div class="card"><span class="empty">查詢失敗</span></div>';
+        }
+    }
 
-  const stockRows = allStocks.map(x => {
-    if (x._type === 'added') return `
+    function renderDiff(el, d) {
+        const fa = d.fund_assets;
+        const s = d.stocks;
+
+        const resolved = (d.start_date !== d.requested_start || d.end_date !== d.requested_end)
+            ? `<div class="resolved-note">實際使用日期：${d.start_date} → ${d.end_date}（依最近有效日期調整）</div>`
+            : '';
+
+        const allStocks = [
+            ...s.added.map(x => ({...x, _type: 'added'})),
+            ...s.removed.map(x => ({...x, _type: 'removed'})),
+            ...s.changed.map(x => ({...x, _type: 'changed'})),
+            ...s.unchanged.map(x => ({...x, _type: 'unchanged'})),
+        ];
+
+        const stockRows = allStocks.map(x => {
+            if (x._type === 'added') return `
       <tr>
         <td style="color:var(--text-3);font-size:12px">${x.code}</td>
         <td>${x.name}</td>
         <td colspan="2" style="text-align:center"><span class="badge badge-new">新增</span></td>
-        <td style="text-align:right">${fmt(x.shares/1000)}</td>
+        <td style="text-align:right">${fmtLots(x.shares)}</td>
         <td style="text-align:right">${fmtPct(x.weight)}</td>
       </tr>`;
-    if (x._type === 'removed') return `
+            if (x._type === 'removed') return `
       <tr>
         <td style="color:var(--text-3);font-size:12px">${x.code}</td>
         <td>${x.name}</td>
         <td colspan="2" style="text-align:center"><span class="badge badge-removed">移除</span></td>
-        <td style="text-align:right;text-decoration:line-through;color:var(--text-3)">${fmt(x.shares/1000)}</td>
+        <td style="text-align:right;text-decoration:line-through;color:var(--text-3)">${fmtLots(x.shares)}</td>
         <td style="text-align:right;text-decoration:line-through;color:var(--text-3)">${fmtPct(x.weight)}</td>
       </tr>`;
-    if (x._type === 'changed') return `
+            if (x._type === 'changed') return `
       <tr>
         <td style="color:var(--text-3);font-size:12px">${x.code}</td>
         <td>${x.name}</td>
-        <td style="text-align:right">${fmt(x.start_shares/1000)}</td>
-        <td style="text-align:right">${fmt(x.end_shares/1000)} ${changeBadge(x.shares_change/1000, false)}</td>
+        <td style="text-align:right">${fmtLots(x.start_shares)}</td>
+        <td style="text-align:right">${fmtLots(x.end_shares)} ${fmtLotsDiff(x.shares_change)}</td>
         <td style="text-align:right">${fmtPct(x.start_weight)}</td>
         <td style="text-align:right">${fmtPct(x.end_weight)} ${pctSpan(x.weight_change)}</td>
       </tr>`;
-    return `
+            return `
       <tr>
         <td style="color:var(--text-3);font-size:12px">${x.code}</td>
         <td>${x.name}</td>
-        <td style="text-align:right;color:var(--text-3)">${fmt(x.shares/1000)}</td>
+        <td style="text-align:right;color:var(--text-3)">${fmtLots(x.shares)}</td>
         <td style="text-align:right;color:var(--text-3)">—</td>
         <td style="text-align:right;color:var(--text-3)">${fmtPct(x.weight)}</td>
         <td style="text-align:right;color:var(--text-3)">—</td>
       </tr>`;
-  }).join('');
+        }).join('');
 
-  el.innerHTML = `
+        el.innerHTML = `
     ${resolved}
 
     <div class="metrics">
@@ -592,9 +829,9 @@ function renderDiff(el, d) {
         <div class="metric-sub">${pctSpan(fa.nav_per_unit_ntd.pct_change)}</div>
       </div>
       <div class="metric">
-        <div class="metric-label">流通張數</div>
-        <div class="metric-value">${fmtNTD(fa.units_outstanding.end/1000)}</div>
-        <div class="metric-sub">${fmtNTD(fa.units_outstanding.change/1000)} 變化</div>
+        <div class="metric-label">流通單位數</div>
+        <div class="metric-value">${fmtNTD(fa.units_outstanding.end)}</div>
+        <div class="metric-sub">${fmtNTD(fa.units_outstanding.change)} 變化</div>
       </div>
     </div>
 
@@ -618,38 +855,38 @@ function renderDiff(el, d) {
       </table>
     </div>
   `;
-}
-
-// ── Manual download ──
-async function triggerDownload() {
-  const btn = document.getElementById('btn-refresh');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>';
-  try {
-    const r = await fetch(API + '/download', { method: 'POST' });
-    const data = await r.json();
-    if (!r.ok) {
-      showToast(data.detail || '更新失敗', 'error');
-    } else if (data.skipped) {
-      showToast('已是最新資料：' + data.filename, 'info');
-    } else {
-      showToast('下載成功：' + data.filename, 'success');
-      loadDates();
     }
-  } catch(e) {
-    showToast('連線失敗', 'error');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '立即更新';
-  }
-}
 
-// ── Init ──
-loadDates();
-const today = new Date().toISOString().slice(0, 10);
-const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-document.getElementById('diff-start').value = yesterday;
-document.getElementById('diff-end').value = today;
+    // ── Manual download ──
+    async function triggerDownload() {
+        const btn = document.getElementById('btn-refresh');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span>';
+        try {
+            const r = await fetch(API + '/download', {method: 'POST'});
+            const data = await r.json();
+            if (!r.ok) {
+                showToast(data.detail || '更新失敗', 'error');
+            } else if (data.skipped) {
+                showToast('已是最新資料：' + data.filename, 'info');
+            } else {
+                showToast('下載成功：' + data.filename, 'success');
+                loadDates();
+            }
+        } catch (e) {
+            showToast('連線失敗', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '立即更新';
+        }
+    }
+
+    // ── Init ──
+    loadDates();
+    const today = new Date().toISOString().slice(0, 10);
+    const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+    document.getElementById('diff-start').value = monthAgo;
+    document.getElementById('diff-end').value = today;
 </script>
 </body>
 </html>
