@@ -13,10 +13,13 @@ import logging
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timezone
 from functools import partial
+from pathlib import Path
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from diff import diff_portfolios
 from downloader import download_latest
@@ -64,6 +67,14 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+STATIC_DIR = Path(__file__).parent / "static"
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+
+@app.get("/", include_in_schema=False)
+def index():
+    return FileResponse(STATIC_DIR / "index.html")
 
 
 # ------------------------------------------------------------------ #
