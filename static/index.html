@@ -158,7 +158,6 @@
             padding: 1.5rem 1rem 3rem;
         }
 
-        /* ETF switcher tabs (top level) */
         .etf-tabs {
             display: flex;
             gap: 8px;
@@ -195,7 +194,6 @@
             font-weight: 500;
         }
 
-        /* Function tabs (snapshot / diff) */
         .fn-tabs {
             display: flex;
             border-bottom: 0.5px solid var(--border);
@@ -346,6 +344,39 @@
 
         tr:hover td {
             background: var(--surface-2);
+        }
+
+        /* Sortable column headers */
+        th.sortable {
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        th.sortable:hover {
+            color: var(--text);
+        }
+
+        th.sortable .sort-icon {
+            display: inline-block;
+            margin-left: 4px;
+            font-size: 10px;
+            color: var(--text-3);
+            transition: color 0.1s;
+        }
+
+        th.sortable.sort-asc .sort-icon::after {
+            content: '▲';
+            color: var(--accent);
+        }
+
+        th.sortable.sort-desc .sort-icon::after {
+            content: '▼';
+            color: var(--accent);
+        }
+
+        th.sortable:not(.sort-asc):not(.sort-desc) .sort-icon::after {
+            content: '⇅';
         }
 
         .badge {
@@ -563,81 +594,68 @@
 </header>
 
 <div class="main">
-
-    <!-- ETF switcher -->
     <div class="etf-tabs">
         <button class="etf-tab active-49" onclick="switchEtf('49YTW', this)">00981A</button>
         <button class="etf-tab" onclick="switchEtf('61YTW', this)">00988A</button>
     </div>
-
-    <!-- Function tabs -->
     <div class="fn-tabs">
         <button class="fn-tab active active-49" id="fn-tab-snapshot" onclick="switchFn('snapshot', this)">快照瀏覽
         </button>
         <button class="fn-tab" id="fn-tab-diff" onclick="switchFn('diff', this)">區間比較</button>
     </div>
 
-    <!-- Snapshot panel -->
     <div id="panel-snapshot" class="panel active">
         <div class="card">
             <div class="section-title">已有資料日期</div>
-            <div id="date-grid" class="date-grid" style="display:flex;flex-wrap:wrap;gap:8px">
+            <div id="date-grid" style="display:flex;flex-wrap:wrap;gap:8px">
                 <span class="loading"><span class="spinner"></span> 載入中…</span>
             </div>
         </div>
         <div id="snapshot-content"></div>
     </div>
 
-    <!-- Diff panel -->
     <div id="panel-diff" class="panel">
         <div class="card">
             <div class="date-range-row">
                 <div class="field"><label>起始日期</label><input type="date" id="diff-start"/></div>
                 <div class="field"><label>結束日期</label><input type="date" id="diff-end"/></div>
-                <button class="primary" id="btn-query-diff" onclick="queryDiff()">查詢差異</button>
+                <button class="primary" onclick="queryDiff()">查詢差異</button>
             </div>
         </div>
         <div id="diff-content"></div>
     </div>
-
 </div>
 
 <div id="toast" class="toast"></div>
 
 <script>
     const API = '';
-
-    // ── State ──
     let currentFund = '49YTW';
-
     const ETF_INFO = {
         '49YTW': {name: '00981A', color: '49'},
         '61YTW': {name: '00988A', color: '61'},
     };
 
-    // ── ETF switcher ──
+    // diff sort state: { key: 'code'|'weight', dir: 'asc'|'desc' }
+    let diffSort = {key: null, dir: 'asc'};
+    // cached diff data for re-sorting without re-fetch
+    let lastDiffData = null;
+    let lastDiffFund = null;
+
+    // ── ETF / tab switchers ──
     function switchEtf(fund, el) {
         currentFund = fund;
         const c = ETF_INFO[fund].color;
-
-        document.querySelectorAll('.etf-tab').forEach(t => {
-            t.className = 'etf-tab';
-        });
+        document.querySelectorAll('.etf-tab').forEach(t => t.className = 'etf-tab');
         el.classList.add('active-' + c);
-
-        // update fn tabs color
         document.querySelectorAll('.fn-tab.active').forEach(t => {
             t.classList.remove('active-49', 'active-61');
             t.classList.add('active-' + c);
         });
-
-        // update query diff button color (primary is always accent so no change needed)
-
-        // toggle external links
         document.getElementById('ext-link-49').style.display = fund === '49YTW' ? '' : 'none';
         document.getElementById('ext-link-61').style.display = fund === '61YTW' ? '' : 'none';
-
-        // reload current panel data
+        diffSort = {key: null, dir: 'asc'};
+        lastDiffData = null;
         const activeFn = document.querySelector('.fn-tab.active');
         if (activeFn && activeFn.id === 'fn-tab-snapshot') {
             loadDates();
@@ -647,12 +665,9 @@
         }
     }
 
-    // ── Function tab switcher ──
     function switchFn(name, el) {
         const c = ETF_INFO[currentFund].color;
-        document.querySelectorAll('.fn-tab').forEach(t => {
-            t.classList.remove('active', 'active-49', 'active-61');
-        });
+        document.querySelectorAll('.fn-tab').forEach(t => t.classList.remove('active', 'active-49', 'active-61'));
         document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
         el.classList.add('active', 'active-' + c);
         document.getElementById('panel-' + name).classList.add('active');
@@ -706,7 +721,7 @@
         return 'active-' + ETF_INFO[currentFund].color;
     }
 
-    // ── Load dates ──
+    // ── Dates / Snapshot ──
     async function loadDates() {
         const fund = currentFund;
         const grid = document.getElementById('date-grid');
@@ -726,7 +741,6 @@
         }
     }
 
-    // ── Load snapshot ──
     async function loadSnapshot(dateStr) {
         const fund = currentFund;
         document.querySelectorAll('.date-chip').forEach(c => {
@@ -758,38 +772,38 @@
             ['申贖應付款', aa.redemption_payable_ntd, null],
         ];
         el.innerHTML = `
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem">
-      <span class="etf-badge etf-badge-${info.color}">${fund} · ${info.name}</span>
-      <span style="font-size:13px;color:var(--text-3)">${d.date}</span>
-    </div>
-    <div class="metrics">
-      <div class="metric"><div class="metric-label">淨資產總值</div><div class="metric-value">${fmtNTD(fa.nav_total_ntd)}</div><div class="metric-sub">NTD</div></div>
-      <div class="metric"><div class="metric-label">每單位淨值</div><div class="metric-value">${fa.nav_per_unit_ntd}</div><div class="metric-sub">NTD</div></div>
-      <div class="metric"><div class="metric-label">流通在外單位數</div><div class="metric-value">${fmtNTD(fa.units_outstanding)}</div><div class="metric-sub">單位</div></div>
-      <div class="metric"><div class="metric-label">成分股數</div><div class="metric-value">${d.stocks.length}</div><div class="metric-sub">檔</div></div>
-    </div>
-    <div class="card">
-      <div class="section-title">資產配置</div>
-      ${allocRows.map(([label, amt, wt]) => `
-        <div class="alloc-row">
-          <span class="alloc-label">${label}</span>
-          <span>NTD ${fmt(amt)}${wt != null ? ' <span style="color:var(--text-3);font-size:12px;">(' + fmtPct(wt) + ')</span>' : ''}</span>
-        </div>`).join('')}
-    </div>
-    <div class="card">
-      <div class="section-title">成分股（${d.stocks.length} 檔）</div>
-      <table>
-        <thead><tr><th>代號</th><th>名稱</th><th style="text-align:right">張數</th><th style="text-align:right">持股權重</th></tr></thead>
-        <tbody>${d.stocks.map(s => `
-          <tr>
-            <td style="color:var(--text-3);font-size:12px">${s.code}</td>
-            <td>${s.name}</td>
-            <td style="text-align:right">${fmtLots(s.shares)}</td>
-            <td style="text-align:right">${fmtPct(s.weight)}</td>
-          </tr>`).join('')}
-        </tbody>
-      </table>
-    </div>`;
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem">
+            <span class="etf-badge etf-badge-${info.color}">${fund} · ${info.name}</span>
+            <span style="font-size:13px;color:var(--text-3)">${d.date}</span>
+        </div>
+        <div class="metrics">
+            <div class="metric"><div class="metric-label">淨資產總值</div><div class="metric-value">${fmtNTD(fa.nav_total_ntd)}</div><div class="metric-sub">NTD</div></div>
+            <div class="metric"><div class="metric-label">每單位淨值</div><div class="metric-value">${fa.nav_per_unit_ntd}</div><div class="metric-sub">NTD</div></div>
+            <div class="metric"><div class="metric-label">流通在外單位數</div><div class="metric-value">${fmtNTD(fa.units_outstanding)}</div><div class="metric-sub">單位</div></div>
+            <div class="metric"><div class="metric-label">成分股數</div><div class="metric-value">${d.stocks.length}</div><div class="metric-sub">檔</div></div>
+        </div>
+        <div class="card">
+            <div class="section-title">資產配置</div>
+            ${allocRows.map(([label, amt, wt]) => `
+                <div class="alloc-row">
+                    <span class="alloc-label">${label}</span>
+                    <span>NTD ${fmt(amt)}${wt != null ? ' <span style="color:var(--text-3);font-size:12px;">(' + fmtPct(wt) + ')</span>' : ''}</span>
+                </div>`).join('')}
+        </div>
+        <div class="card">
+            <div class="section-title">成分股（${d.stocks.length} 檔）</div>
+            <table>
+                <thead><tr><th>代號</th><th>名稱</th><th style="text-align:right">張數</th><th style="text-align:right">持股權重</th></tr></thead>
+                <tbody>${d.stocks.map(s => `
+                    <tr>
+                        <td style="color:var(--text-3);font-size:12px">${s.code}</td>
+                        <td>${s.name}</td>
+                        <td style="text-align:right">${fmtLots(s.shares)}</td>
+                        <td style="text-align:right">${fmtPct(s.weight)}</td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>
+        </div>`;
     }
 
     // ── Diff ──
@@ -810,10 +824,110 @@
                 el.innerHTML = `<div class="card"><span class="empty">${err.detail || '查詢失敗'}</span></div>`;
                 return;
             }
-            renderDiff(el, await r.json(), fund);
+            const d = await r.json();
+            lastDiffData = d;
+            lastDiffFund = fund;
+            diffSort = {key: null, dir: 'asc'};
+            renderDiff(el, d, fund);
         } catch {
             el.innerHTML = '<div class="card"><span class="empty">查詢失敗</span></div>';
         }
+    }
+
+    // Sort key for a stock row (used for both sortable columns)
+    function stockSortValue(x, key) {
+        if (key === 'code') return x.code || '';
+        if (key === 'weight') return x.end_weight ?? x.weight ?? -Infinity;
+        return 0;
+    }
+
+    // Apply sort: pinned types first (added/removed), then sort the rest
+    function sortedStocks(allStocks, key, dir) {
+        const pinned = allStocks.filter(x => x._type === 'added' || x._type === 'removed');
+        const sortable = allStocks.filter(x => x._type !== 'added' && x._type !== 'removed');
+
+        if (!key) return [...pinned, ...sortable];
+
+        sortable.sort((a, b) => {
+            const av = stockSortValue(a, key);
+            const bv = stockSortValue(b, key);
+            if (av < bv) return dir === 'asc' ? -1 : 1;
+            if (av > bv) return dir === 'asc' ? 1 : -1;
+            return 0;
+        });
+        return [...pinned, ...sortable];
+    }
+
+    function renderDiffTable(allStocks) {
+        const sorted = sortedStocks(allStocks, diffSort.key, diffSort.dir);
+
+        const thClass = (key) => {
+            let cls = 'sortable';
+            if (diffSort.key === key) cls += ' sort-' + diffSort.dir;
+            return cls;
+        };
+
+        const rows = sorted.map(x => {
+            if (x._type === 'added') return `<tr>
+            <td style="color:var(--text-3);font-size:12px">${x.code}</td><td>${x.name}</td>
+            <td colspan="2" style="text-align:center"><span class="badge badge-new">新增</span></td>
+            <td style="text-align:right">—</td><td style="text-align:right">${fmtPct(x.weight)}</td></tr>`;
+            if (x._type === 'removed') return `<tr>
+            <td style="color:var(--text-3);font-size:12px">${x.code}</td><td>${x.name}</td>
+            <td colspan="2" style="text-align:center"><span class="badge badge-removed">移除</span></td>
+            <td style="text-align:right;text-decoration:line-through;color:var(--text-3)">${fmtLots(x.shares)}</td>
+            <td style="text-align:right;text-decoration:line-through;color:var(--text-3)">${fmtPct(x.weight)}</td></tr>`;
+            if (x._type === 'changed') return `<tr>
+            <td style="color:var(--text-3);font-size:12px">${x.code}</td><td>${x.name}</td>
+            <td style="text-align:right">${fmtLots(x.start_shares)}</td>
+            <td style="text-align:right">${fmtLots(x.end_shares)} ${fmtLotsDiff(x.shares_change)}</td>
+            <td style="text-align:right">${fmtPct(x.start_weight)}</td>
+            <td style="text-align:right">${fmtPct(x.end_weight)} ${pctSpan(x.weight_change)}</td></tr>`;
+            return `<tr>
+            <td style="color:var(--text-3);font-size:12px">${x.code}</td><td>${x.name}</td>
+            <td style="text-align:right;color:var(--text-3)">${fmtLots(x.shares)}</td>
+            <td style="text-align:right;color:var(--text-3)">—</td>
+            <td style="text-align:right;color:var(--text-3)">${fmtPct(x.weight)}</td>
+            <td style="text-align:right;color:var(--text-3)">—</td></tr>`;
+        }).join('');
+
+        return `<table>
+        <thead><tr>
+            <th class="${thClass('code')}" onclick="toggleDiffSort('code')" style="text-align:left">
+                代號<span class="sort-icon"></span>
+            </th>
+            <th>名稱</th>
+            <th style="text-align:right">起始張數</th>
+            <th style="text-align:right">結束張數</th>
+            <th style="text-align:right">起始權重</th>
+            <th class="${thClass('weight')}" onclick="toggleDiffSort('weight')" style="text-align:right">
+                結束權重<span class="sort-icon"></span>
+            </th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+    </table>`;
+    }
+
+    function toggleDiffSort(key) {
+        if (diffSort.key === key) {
+            diffSort.dir = diffSort.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+            diffSort.key = key;
+            diffSort.dir = key === 'weight' ? 'desc' : 'asc'; // weight defaults desc (big→small), code asc
+        }
+        if (!lastDiffData) return;
+
+        const s = lastDiffData.stocks;
+        const allStocks = [
+            ...s.added.map(x => ({...x, _type: 'added'})),
+            ...s.removed.map(x => ({...x, _type: 'removed'})),
+            ...s.changed.map(x => ({...x, _type: 'changed'})),
+            ...s.unchanged.map(x => ({...x, _type: 'unchanged'})),
+        ];
+
+        // Only re-render the table inside the card, keep metrics intact
+        const tableContainer = document.getElementById('diff-stock-table');
+        if (tableContainer) tableContainer.innerHTML = renderDiffTable(allStocks);
     }
 
     function renderDiff(el, d, fund) {
@@ -829,58 +943,27 @@
             ...s.unchanged.map(x => ({...x, _type: 'unchanged'})),
         ];
 
-        const stockRows = allStocks.map(x => {
-            if (x._type === 'added') return `<tr>
-      <td style="color:var(--text-3);font-size:12px">${x.code}</td><td>${x.name}</td>
-      <td colspan="2" style="text-align:center"><span class="badge badge-new">新增</span></td>
-      <td style="text-align:right">—</td><td style="text-align:right">${fmtPct(x.weight)}</td></tr>`;
-            if (x._type === 'removed') return `<tr>
-      <td style="color:var(--text-3);font-size:12px">${x.code}</td><td>${x.name}</td>
-      <td colspan="2" style="text-align:center"><span class="badge badge-removed">移除</span></td>
-      <td style="text-align:right;text-decoration:line-through;color:var(--text-3)">${fmtLots(x.shares)}</td>
-      <td style="text-align:right;text-decoration:line-through;color:var(--text-3)">${fmtPct(x.weight)}</td></tr>`;
-            if (x._type === 'changed') return `<tr>
-      <td style="color:var(--text-3);font-size:12px">${x.code}</td><td>${x.name}</td>
-      <td style="text-align:right">${fmtLots(x.start_shares)}</td>
-      <td style="text-align:right">${fmtLots(x.end_shares)} ${fmtLotsDiff(x.shares_change)}</td>
-      <td style="text-align:right">${fmtPct(x.start_weight)}</td>
-      <td style="text-align:right">${fmtPct(x.end_weight)} ${pctSpan(x.weight_change)}</td></tr>`;
-            return `<tr>
-      <td style="color:var(--text-3);font-size:12px">${x.code}</td><td>${x.name}</td>
-      <td style="text-align:right;color:var(--text-3)">${fmtLots(x.shares)}</td>
-      <td style="text-align:right;color:var(--text-3)">—</td>
-      <td style="text-align:right;color:var(--text-3)">${fmtPct(x.weight)}</td>
-      <td style="text-align:right;color:var(--text-3)">—</td></tr>`;
-        }).join('');
-
         el.innerHTML = `
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem">
-      <span class="etf-badge etf-badge-${info.color}"> ${info.name}</span>
-      <span style="font-size:13px;color:var(--text-3)">${d.start_date} → ${d.end_date}</span>
-    </div>
-    ${resolved}
-    <div class="metrics">
-      <div class="metric"><div class="metric-label">淨資產變化</div><div class="metric-value">${fmtNTD(fa.nav_total_ntd.change)}</div><div class="metric-sub">${pctSpan(fa.nav_total_ntd.pct_change)}</div></div>
-      <div class="metric"><div class="metric-label">每單位淨值</div><div class="metric-value">${fa.nav_per_unit_ntd.start} → ${fa.nav_per_unit_ntd.end}</div><div class="metric-sub">${pctSpan(fa.nav_per_unit_ntd.pct_change)}</div></div>
-      <div class="metric"><div class="metric-label">流通單位數變化</div><div class="metric-value">${fmtNTD(fa.units_outstanding.end)}</div><div class="metric-sub">${fmtNTD(fa.units_outstanding.change)}</div></div>
-    </div>
-    <div class="card">
-      <div class="section-title">成分股變動摘要</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:1rem">
-        <span class="badge badge-new">新增 ${s.summary.added_count}</span>
-        <span class="badge badge-removed">移除 ${s.summary.removed_count}</span>
-        <span class="badge badge-up">變動 ${s.summary.changed_count}</span>
-        <span class="badge badge-same">不變 ${s.summary.unchanged_count}</span>
-      </div>
-      <table>
-        <thead><tr>
-          <th>代號</th><th>名稱</th>
-          <th style="text-align:right">起始張數</th><th style="text-align:right">結束張數</th>
-          <th style="text-align:right">起始權重</th><th style="text-align:right">結束權重</th>
-        </tr></thead>
-        <tbody>${stockRows}</tbody>
-      </table>
-    </div>`;
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem">
+            <span class="etf-badge etf-badge-${info.color}">${info.name}</span>
+            <span style="font-size:13px;color:var(--text-3)">${d.start_date} → ${d.end_date}</span>
+        </div>
+        ${resolved}
+        <div class="metrics">
+            <div class="metric"><div class="metric-label">淨資產變化</div><div class="metric-value">${fmtNTD(fa.nav_total_ntd.change)}</div><div class="metric-sub">${pctSpan(fa.nav_total_ntd.pct_change)}</div></div>
+            <div class="metric"><div class="metric-label">每單位淨值</div><div class="metric-value">${fa.nav_per_unit_ntd.start} → ${fa.nav_per_unit_ntd.end}</div><div class="metric-sub">${pctSpan(fa.nav_per_unit_ntd.pct_change)}</div></div>
+            <div class="metric"><div class="metric-label">流通單位數變化</div><div class="metric-value">${fmtNTD(fa.units_outstanding.end)}</div><div class="metric-sub">${fmtNTD(fa.units_outstanding.change)}</div></div>
+        </div>
+        <div class="card">
+            <div class="section-title">成分股變動摘要</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:1rem">
+                <span class="badge badge-new">新增 ${s.summary.added_count}</span>
+                <span class="badge badge-removed">移除 ${s.summary.removed_count}</span>
+                <span class="badge badge-up">變動 ${s.summary.changed_count}</span>
+                <span class="badge badge-same">不變 ${s.summary.unchanged_count}</span>
+            </div>
+            <div id="diff-stock-table">${renderDiffTable(allStocks)}</div>
+        </div>`;
     }
 
     // ── Download ──
