@@ -39,7 +39,7 @@ def _parse_pct(val: str) -> float | None:
 
 def parse_file(path: Path) -> dict:
     """Parse a single xlsx file and return structured dict."""
-    df = pd.read_excel(path, sheet_name=0, header=None)
+    df = pd.read_excel(path, sheet_name=0, header=None, dtype=str)
 
     # --- date ---
     date_cell = str(df.iloc[0, 0])  # e.g. "資料日期：115/04/15"
@@ -69,12 +69,14 @@ def parse_file(path: Path) -> dict:
         code = row[0]
         if pd.isna(code):
             continue
-        try:
-            code_str = str(int(code))
-        except (ValueError, TypeError):
+        code_str = code.strip()
+        if not code_str:
             continue
         name = str(row[1]).strip()
-        shares = int(str(row[2]).replace(",", ""))
+        try:
+            shares = int(str(row[2]).replace(",", ""))
+        except (ValueError, TypeError):
+            continue
         weight = _parse_pct(str(row[3]))
         stocks.append({
             "code": code_str,
