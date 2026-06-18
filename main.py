@@ -1,14 +1,6 @@
 """
 ETF Portfolio Tracker API
 Run: uvicorn main:app --reload
-
-Routes are prefixed by fund code, e.g.:
-  GET  /{fund}/dates
-  GET  /{fund}/snapshot/{date}
-  GET  /{fund}/diff?start=&end=
-  POST /{fund}/download
-  GET  /etfs          - list all configured ETFs
-  GET  /health
 """
 import asyncio
 import logging
@@ -33,7 +25,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# One store per ETF
 stores: dict[str, PortfolioStore] = {
     code: PortfolioStore(code) for code in ETF_CONFIGS
 }
@@ -77,7 +68,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="ETF Portfolio Tracker",
-    description="Tracks 00981A and 00988A ETF portfolios.",
+    description="Tracks 49YTW (00981A) and 61YTW (00988A) ETF portfolios.",
     version="2.0.0",
     lifespan=lifespan,
 )
@@ -90,10 +81,6 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 def index():
     return FileResponse(STATIC_DIR / "index.html")
 
-
-# ------------------------------------------------------------------ #
-# Meta                                                                 #
-# ------------------------------------------------------------------ #
 
 @app.get("/etfs", summary="List all configured ETFs")
 def list_etfs():
@@ -113,10 +100,6 @@ def health():
         "server_time_utc": datetime.now(timezone.utc).isoformat(),
     }
 
-
-# ------------------------------------------------------------------ #
-# Per-fund routes                                                      #
-# ------------------------------------------------------------------ #
 
 @app.get("/{fund}/dates", summary="List available snapshot dates for a fund")
 def list_dates(fund: str):
@@ -167,8 +150,26 @@ def get_diff(
 
 @app.post("/{fund}/download", summary="Manually trigger a download for a fund")
 async def trigger_download(fund: str):
-    _get_store(fund)  # validate fund exists
     result = await _run_download(fund)
     if not result["success"]:
         raise HTTPException(status_code=502, detail=result.get("error", "Download failed"))
     return result
+
+
+@app.post("/{fund}/reload", summary="Scan data folder and load any new xlsx files")
+def reload_store(fund: str):
+    """
+    Rescans data/{fund}/ for xlsx files added manually after server startup.
+    Returns the list of newly loaded dates and full updated date list.
+    """
+    store = _get_store(fund)
+    before = set(store.all_dates())
+    store.reload()
+    after = set(store.all_dates())
+    new_dates = sorted(after - before)
+    logger.info(f"[{fund}] reload: found {len(new_dates)} new date(s): {new_dates}")
+    return {
+        "fund": fund,
+        "new_dates": new_dates,
+        "all_dates": store.all_dates(),
+    }

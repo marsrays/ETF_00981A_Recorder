@@ -23,6 +23,7 @@ class PortfolioStore:
         self._load_all()
 
     def _load_all(self):
+        new_entries = {}
         for xlsx in self._fund_dir.glob("ETF_Investment_Portfolio_*.xlsx"):
             file_date = extract_date_from_filename(xlsx.name)
             if file_date is None:
@@ -31,15 +32,17 @@ class PortfolioStore:
             with self._lock:
                 if key in self._store:
                     continue
+            if key in new_entries:
+                continue
             try:
                 data = parse_file(xlsx)
+                new_entries[key] = data
             except Exception as e:
                 print(f"[{self.fund_code}] Failed to parse {xlsx.name}: {e}")
-                continue
+        if new_entries:
             with self._lock:
-                if key not in self._store:
-                    self._store[key] = data
-                    self._refresh_sorted_locked()
+                self._store.update(new_entries)
+                self._refresh_sorted_locked()
 
     def _refresh_sorted_locked(self):
         self._sorted_dates = sorted(self._store.keys())
